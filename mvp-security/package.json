@@ -1,0 +1,9 @@
+{
+  "name": "mvp-security",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start:backend": "node backend/src/server.js",
+    "start:frontend": "vite --cwd frontend"
+  }
+}
