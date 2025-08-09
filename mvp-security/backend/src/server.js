@@ -4,6 +4,7 @@ const api = require('./routes/api');
 const app = express();
 app.use(bodyParser());
 app.use('/api', api);
+app.get('/', (req, res) => res.json({ status: 'ok', version: '0.1.0', name: 'LogShield MVP' }));
 const port = process.env.PORT || 3000;
 app.listen(port);
 module.exports = app;
