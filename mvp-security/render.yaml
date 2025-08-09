@@ -1,10 +1,10 @@
 services:
   - type: web
     name: mvp-security-backend
-    env: docker
-    dockerfilePath: ./Dockerfile
+    env: node
     plan: free
     region: oregon
+    root: mvp-security
     buildCommand: npm install
     startCommand: npm run start:backend
     autoDeploy: true
