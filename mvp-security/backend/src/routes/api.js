@@ -35,7 +35,8 @@ router.post('/webhook', express.raw({type: 'application/json'}), (req,res)=>{
   try{
     const Stripe = require('stripe');
     const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_PLACEHOLDER');
-    const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    const payload = req.rawBody || JSON.stringify(req.body);
+    const event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
     if(event.type === 'checkout.session.completed'){
       const session = event.data.object;
     }
