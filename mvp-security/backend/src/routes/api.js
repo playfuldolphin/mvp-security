@@ -28,7 +28,22 @@ router.post('/create-checkout-session', auth, express.json(), async (req, res) =
   return res.json({url: sessionUrl});
 });
 router.post('/subscribe', auth, (req, res) => {const plan = req.body.plan || 'starter'; const id = crypto.randomBytes(8).toString('hex'); subscriptions[id]={id,user:req.user.email,plan,status:'active',started_at:new Date().toISOString()}; return res.json({subscription:subscriptions[id]});});
-router.post('/webhook', express.json(), (req,res)=>{return res.json({ok:true,received:req.body});});
+router.post('/webhook', express.raw({type: 'application/json'}), (req,res)=>{
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if(!webhookSecret) return res.status(500).json({error:'stripe webhook secret not configured'});
+  try{
+    const Stripe = require('stripe');
+    const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_PLACEHOLDER');
+    const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    if(event.type === 'checkout.session.completed'){
+      const session = event.data.object;
+    }
+    return res.json({ok:true,received:event.type});
+  }catch(err){
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+});
 router.post('/upload-logs', auth, async (req, res) => {const { logs } = req.body; const incidents = await detector.processLogs(Array.isArray(logs) ? logs : []); const userIncidents = incidents.map(i=>({...i, user:req.user.email})); return res.json({ incidents: userIncidents });});
 router.get('/status', (req, res) => res.json({ status: 'ok', version: '0.1.0' }));
 module.exports = router;
