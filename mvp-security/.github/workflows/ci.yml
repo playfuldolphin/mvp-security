@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Print environment
+        run: |
+          echo "NODE_VERSION: $(node -v || echo 'n/a')"
+          echo "NPM_VERSION: $(npm -v || echo 'n/a')"
+          env
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        run: npm install --prefix mvp-security --loglevel=info
+
+      - name: Start backend (background)
+        run: |
+          set -x
+          node mvp-security/backend/src/server.js &
+          sleep 2
+
+      - name: Check API status
+        run: |
+          set -x
+          curl -sS -D - http://localhost:3000/api/status || (sleep 2 && curl -sS -D - http://localhost:3000/api/status)
+
+      - name: Install frontend dependencies
+        run: npm install --prefix mvp-security/frontend --loglevel=info
+
+      - name: Build frontend
+        run: npm run build --prefix mvp-security/frontend
+
+      - name: List build artifacts
+        run: |
+          ls -la mvp-security/frontend || true
+          ls -la mvp-security/frontend/dist || true

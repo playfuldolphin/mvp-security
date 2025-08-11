@@ -2,6 +2,12 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 const detector = require('../detector/worker');
+const fs = require('fs');
+const path = require('path');
+const dataDir = path.join(__dirname, '../../data');
+const subsFile = path.join(dataDir, 'subscriptions.json');
+function loadSubs(){ if(!fs.existsSync(dataDir)) fs.mkdirSync(dataDir,{recursive:true}); try{ const s = fs.readFileSync(subsFile,'utf8'); return s ? JSON.parse(s) : []; }catch(e){ return []; } }
+function saveSubs(s){ if(!fs.existsSync(dataDir)) fs.mkdirSync(dataDir,{recursive:true}); fs.writeFileSync(subsFile, JSON.stringify(s, null, 2)); }
 const users = {};
 const sessions = {};
 const subscriptions = {};
@@ -39,12 +45,22 @@ router.post('/webhook', express.raw({type: 'application/json'}), (req,res)=>{
     const event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
     if(event.type === 'checkout.session.completed'){
       const session = event.data.object;
+      const subs = loadSubs();
+      subs.push({
+        id: session.id,
+        customer_email: session.customer_email || session.customer || req.headers['stripe-email'] || null,
+        session,
+        received_at: new Date().toISOString()
+      });
+      saveSubs(subs);
     }
     return res.json({ok:true,received:event.type});
   }catch(err){
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 });
+router.get('/admin/subscriptions', auth, (req, res) => { try { const subs = loadSubs(); return res.json({ subscriptions: subs }); } catch (e) { return res.status(500).json({ error: 'failed to load subscriptions' }); } });
+
 router.post('/upload-logs', auth, async (req, res) => {const { logs } = req.body; const incidents = await detector.processLogs(Array.isArray(logs) ? logs : []); const userIncidents = incidents.map(i=>({...i, user:req.user.email})); return res.json({ incidents: userIncidents });});
 router.get('/status', (req, res) => res.json({ status: 'ok', version: '0.1.0' }));
 module.exports = router;

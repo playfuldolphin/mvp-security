@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
+import React from 'react'
+import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import Upload from './pages/Upload'
+import Dashboard from './pages/Dashboard'
+import Billing from './pages/Billing'
 export default function App(){
-  const [logs,setLogs]=useState('');
-  const [res,setRes]=useState(null);
-  async function upload(){
-    const r=await fetch('/api/upload-logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({logs:logs.split('\n')})});
-    setRes(await r.json());
-  }
   return (
-    React.createElement('div',null,
-      React.createElement('h1',null,'LogShield MVP'),
-      React.createElement('textarea',{value:logs,onChange:e=>setLogs(e.target.value),rows:10,cols:60}),
-      React.createElement('div',null,
-        React.createElement('button',{onClick:upload},'Upload')),
-      res && React.createElement('pre',null,JSON.stringify(res,null,2))
+    React.createElement('div', {className: 'app'},
+      React.createElement('nav', null,
+        React.createElement(Link, {to: '/'}, 'Home'), ' | ',
+        React.createElement(Link, {to: '/upload'}, 'Upload Logs'), ' | ',
+        React.createElement(Link, {to: '/dashboard'}, 'Dashboard'), ' | ',
+        React.createElement(Link, {to: '/billing'}, 'Billing'), ' | ',
+        React.createElement(Link, {to: '/login'}, 'Login')
+      ),
+      React.createElement(Routes, null,
+        React.createElement(Route, {path: '/', element: React.createElement('div', null, 'Welcome to LogShield')}),
+        React.createElement(Route, {path: '/login', element: React.createElement(Login)}),
+        React.createElement(Route, {path: '/signup', element: React.createElement(Signup)}),
+        React.createElement(Route, {path: '/upload', element: React.createElement(Upload)}),
+        React.createElement(Route, {path: '/dashboard', element: React.createElement(Dashboard)}),
+        React.createElement(Route, {path: '/billing', element: React.createElement(Billing)})
+      )
     )
-  );
+  )
 }
