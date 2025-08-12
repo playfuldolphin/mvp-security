@@ -22,27 +22,42 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install backend dependencies
-        run: npm install --prefix mvp-security --loglevel=info
+      - name: Install backend dependencies (capture logs)
+        run: |
+          set -o pipefail
+          npm install --prefix mvp-security --loglevel=info 2>&1 | tee backend-npm-install.log
+
+      - name: Install frontend dependencies (capture logs)
+        run: |
+          set -o pipefail
+          npm install --prefix mvp-security/frontend --loglevel=info 2>&1 | tee frontend-npm-install.log
 
       - name: Start backend (background)
         run: |
-          set -x
           node mvp-security/backend/src/server.js &
           sleep 2
 
       - name: Check API status
         run: |
-          set -x
           curl -sS -D - http://localhost:3000/api/status || (sleep 2 && curl -sS -D - http://localhost:3000/api/status)
 
-      - name: Install frontend dependencies
-        run: npm install --prefix mvp-security/frontend --loglevel=info
-
       - name: Build frontend
-        run: npm run build --prefix mvp-security/frontend
+        run: npm run build --prefix mvp-security/frontend 2>&1 | tee frontend-build.log
 
       - name: List build artifacts
         run: |
           ls -la mvp-security/frontend || true
           ls -la mvp-security/frontend/dist || true
+
+      - name: Upload npm & build logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs
+          path: |
+            backend-npm-install.log
+            frontend-npm-install.log
+            frontend-build.log
+
+      - name: Show uploaded artifacts (informational)
+        run: |
+          echo "Uploaded logs as artifact 'ci-logs'"
